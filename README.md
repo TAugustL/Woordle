@@ -23,6 +23,11 @@
   </ul>
 </div>
 
+<h2>About</h2>
+<div>
+  <p>This program contains all 14855 5-letter words found in Wordle (as of May 2024). The program is written entirely in Rust with no dependencies, so just the standard library! Still, this program is not perfect and was just a fun excercise. I hope you can have some fun with it!</p>
+</div>
+
 <hr>
 
 <p><i>Note: Program is still in development; there are still some bugs, but the program works in almost every case.</i></p>
