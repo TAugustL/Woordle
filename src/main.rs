@@ -100,7 +100,7 @@ fn check_word<'a>(
                 for (k_ch, k_i) in known {
                     if !word.contains(*k_ch)
                         || word.find(*k_ch) == Some(*k_i)
-                        || word.rfind(*k_ch) == Some(*i)
+                        || word.rfind(*k_ch) == Some(*k_i)
                     {
                         map.remove(word).unwrap();
                         continue 'next;
@@ -145,7 +145,7 @@ fn check_word<'a>(
                         map.remove(word).unwrap();
                         continue 'next;
                     } else if word.contains(*w_ch) && in_correct {
-                        *c += 1;
+                        // *c += 1;
                         continue 'next;
                     }
                 }
@@ -156,6 +156,7 @@ fn check_word<'a>(
                 if !word.contains(*ch)
                     || (word.find(*ch) != Some(*i) && word.rfind(*ch) == Some(*i))
                     || (word.find(*ch) == Some(*i) && word.rfind(*ch) != Some(*i))
+                    || word.find(*ch) == Some(*i)
                 {
                     map.remove(word).unwrap();
                     continue 'next;
