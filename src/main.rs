@@ -19,7 +19,12 @@ fn main() {
     io::stdin()
         .read_line(&mut wrong)
         .expect("Failed to read input!");
-    let wrong: Vec<char> = wrong.trim().to_string().chars().collect();
+    let wrong_chars: Vec<char> = wrong.trim().to_string().chars().collect();
+    let mut x: Vec<(char, usize)> = Vec::new();
+    for w_ch in wrong_chars {
+        x.push((w_ch, 0));
+    }
+    let wrong: Vec<(char, usize)> = x;
 
     let mut correct: Vec<(char, usize)> = Vec::new();
     let mut known: Vec<(char, usize)> = Vec::new();
@@ -43,163 +48,15 @@ fn main() {
             }
         }
     }
-    let c_len = correct.len();
-
-    let mut k_len: usize = 0;
-    for _ in &known {
-        k_len += 1;
-    }
 
     let mut map: HashMap<&str, usize> = HashMap::new();
 
-    // TEST
-    // for _ in 0..5 {
-    //     todo!();
-    // }
-    // TEST
-
-    for (ch, i) in &correct {
-        'i2: for word in WORDS.split(",") {
-            if word.as_bytes()[*i] as char == *ch {
-                let c = map.entry(word).or_insert(0);
-
-                if !word.contains(*ch)
-                    || ((word.find(*ch) != Some(*i)) && word.rfind(*ch) != Some(*i))
-                {
-                    map.remove(word).unwrap();
-                    continue 'i2;
-                }
-
-                // IF THE CHARACTER IS WHERE A KNOWN CHARACTER (WRONG POSITION) IS, REMOVE THE WORD
-                for (k_ch, k_i) in &known {
-                    if !word.contains(*k_ch)
-                        || word.find(*k_ch) == Some(*k_i)
-                        || word.rfind(*k_ch) == Some(*k_i)
-                    {
-                        map.remove(word).unwrap();
-                        continue 'i2;
-                    }
-                }
-
-                // IF ALL CHARACTERS ARE KNOWN
-                if k_len + c_len >= 5 {
-                    let mut same_ch_check: [bool; 5] = [false, false, false, false, false];
-                    for (_ch, i) in &correct {
-                        same_ch_check[*i] = true;
-                    }
-                    for ch_index in 0..word.len() {
-                        for (ch, _i) in &known {
-                            if word.as_bytes()[ch_index] as char == *ch {
-                                same_ch_check[ch_index] = true;
-                            }
-                        }
-                    }
-                    if same_ch_check != [true, true, true, true, true] {
-                        map.remove(word).unwrap();
-                        continue 'i2;
-                    }
-                }
-
-                // IF THE CHARACTER BELONGS THE THE USER-SPECEFIED WRONG CHARACTERS, REMOVE WORD
-                for w_ch in &wrong {
-                    let in_correct = {
-                        let mut x: bool = false;
-                        'i4: for (ch, _i) in &correct {
-                            if ch == w_ch {
-                                x = true;
-                                break 'i4;
-                            }
-                        }
-                        x
-                    };
-
-                    if in_correct && word.find(*w_ch) != word.rfind(*w_ch) {
-                        map.remove(word).unwrap();
-                        continue 'i2;
-                    }
-
-                    if word.contains(*w_ch) && !in_correct {
-                        map.remove(word).unwrap();
-                        continue 'i2;
-                    } else if word.contains(*w_ch) && in_correct {
-                        *c += 1;
-                        continue 'i2;
-                    }
-                }
-
-                *c += 1;
-            }
-        }
-    }
-    if correct.is_empty() {
-        for (ch, i) in &known {
-            'i2: for word in WORDS.split(",") {
-                let c = map.entry(word).or_insert(0);
-                if !word.contains(*ch)
-                    || (word.find(*ch) != Some(*i) && word.rfind(*ch) == Some(*i))
-                    || (word.find(*ch) == Some(*i) && word.rfind(*ch) != Some(*i))
-                {
-                    map.remove(word).unwrap();
-                    continue 'i2;
-                }
-
-                let mut dup_ch_count: usize = 0;
-                let mut dup_k_ch_count: usize = 0;
-                for c_ch in word.chars() {
-                    if c_ch == *ch {
-                        dup_ch_count += 1;
-                    }
-                }
-                for (ch1, _i) in &known {
-                    for (ch2, _i) in &known {
-                        if ch1 == ch2 {
-                            dup_k_ch_count += 1;
-                        }
-                    }
-                }
-                dup_k_ch_count /= 2;
-
-                println!("K dup count: {dup_k_ch_count}");
-                if dup_ch_count < dup_k_ch_count {
-                    map.remove(word).unwrap();
-                    continue 'i2;
-                }
-
-                let mut same_ch_check: [bool; 5] = [false, false, false, false, false];
-                for ch_index in 0..word.len() {
-                    if word.as_bytes()[ch_index] as char == *ch {
-                        same_ch_check[ch_index] = true;
-                    }
-                }
-                if !same_ch_check.contains(&true) {
-                    map.remove(word).unwrap();
-                    continue 'i2;
-                }
-
-                for w_ch in &wrong {
-                    if word.contains(*w_ch) {
-                        map.remove(word).unwrap();
-                        continue 'i2;
-                    }
-                }
-
-                *c += 1;
-            }
-        }
-    }
-    if known.is_empty() && correct.is_empty() {
-        'o: for word in WORDS.split(",") {
-            let c = map.entry(word).or_insert(0);
-
-            for w_ch in &wrong {
-                if word.contains(*w_ch) {
-                    map.remove(word).unwrap();
-                    continue 'o;
-                }
-            }
-
-            *c += 1;
-        }
+    if !correct.is_empty() {
+        map = check_word(&wrong, &known, &correct, &mut map, &correct);
+    } else if correct.is_empty() && !known.is_empty() {
+        map = check_word(&wrong, &known, &correct, &mut map, &known);
+    } else {
+        map = check_word(&wrong, &known, &correct, &mut map, &wrong)
     }
 
     let mut max_val: usize = 0;
@@ -208,7 +65,6 @@ fn main() {
             max_val = *value;
         }
     }
-
     for (key, value) in map.iter() {
         if value >= &max_val {
             solutions.push(key);
@@ -219,43 +75,144 @@ fn main() {
     println!("Entries: {}", solutions.len());
 }
 
-fn _check_word<'a>(
-    wrong: Vec<char>,
-    known: Vec<(char, usize)>,
-    correct: Vec<(char, usize)>,
+fn check_word<'a>(
+    wrong: &Vec<(char, usize)>,
+    known: &Vec<(char, usize)>,
+    correct: &Vec<(char, usize)>,
     map: &mut HashMap<&'a str, usize>,
-    loop_field: Vec<(char, usize)>,
+    loop_field: &Vec<(char, usize)>,
 ) -> HashMap<&'a str, usize> {
-    for (ch, i) in &loop_field {
+    for (ch, i) in loop_field {
         'next: for word in WORDS.split(",") {
             let c = map.entry(word).or_insert(0);
 
-            if !word.contains(*ch) || word.find(*ch) == Some(*i) || word.rfind(*ch) == Some(*i) {
-                map.remove(word).unwrap();
-                continue 'next;
-            }
-
-            let mut same_ch_check: [bool; 5] = [false, false, false, false, false];
-            for ch_index in 0..word.len() {
-                if word.as_bytes()[ch_index] as char == *ch {
-                    same_ch_check[ch_index] = true;
+            // SOME IN CORRECT
+            if !correct.is_empty() && word.as_bytes()[*i] as char == *ch {
+                // CORRECT
+                if !word.contains(*ch)
+                    || (word.find(*ch) != Some(*i) && word.rfind(*ch) != Some(*i))
+                {
+                    map.remove(word).unwrap();
+                    continue 'next;
                 }
-            }
-            if correct.is_empty() && !same_ch_check.contains(&true)
-                || (correct.len() + known.len() >= 5
-                    && same_ch_check != [true, true, true, true, true])
-            {
-                map.remove(word).unwrap();
-                continue 'next;
-            }
 
-            for w_ch in &wrong {
+                // KNOWN
+                for (k_ch, k_i) in known {
+                    if !word.contains(*k_ch)
+                        || word.find(*k_ch) == Some(*k_i)
+                        || word.rfind(*k_ch) == Some(*i)
+                    {
+                        map.remove(word).unwrap();
+                        continue 'next;
+                    }
+                }
+
+                // ALL KNOWN
+                if correct.len() + known.len() >= 5 {
+                    let mut check: [bool; 5] = [false, false, false, false, false];
+                    for (_, c_i) in correct {
+                        check[*c_i] = true;
+                    }
+                    for ch_index in 0..word.len() {
+                        for (k_ch, _) in known {
+                            if word.as_bytes()[ch_index] as char == *k_ch {
+                                check[ch_index] = true;
+                            }
+                        }
+                    }
+                    if check != [true, true, true, true, true] {
+                        map.remove(word).unwrap();
+                        continue 'next;
+                    }
+                }
+
+                // WRONG
+                for (w_ch, _) in wrong {
+                    let in_correct = {
+                        let mut x: bool = false;
+                        'check: for (ch, _i) in correct {
+                            if ch == w_ch {
+                                x = true;
+                                break 'check;
+                            }
+                        }
+                        x
+                    };
+
+                    if (in_correct && word.find(*w_ch) != word.rfind(*w_ch))
+                        || (word.contains(*w_ch) && !in_correct)
+                    {
+                        map.remove(word).unwrap();
+                        continue 'next;
+                    } else if word.contains(*w_ch) && in_correct {
+                        *c += 1;
+                        continue 'next;
+                    }
+                }
+                *c += 1;
+
+            // ONLY KNOWN
+            } else if correct.is_empty() && !known.is_empty() {
+                if !word.contains(*ch)
+                    || (word.find(*ch) != Some(*i) && word.rfind(*ch) == Some(*i))
+                    || (word.find(*ch) == Some(*i) && word.rfind(*ch) != Some(*i))
+                {
+                    map.remove(word).unwrap();
+                    continue 'next;
+                }
+
+                let (mut d_ch_c, mut d_k_ch_c): (usize, usize) = (0, 0);
+                for word_ch in word.chars() {
+                    if word_ch == *ch {
+                        d_ch_c += 1;
+                    }
+                }
+                for (k_ch1, _) in known {
+                    for (k_ch2, _) in known {
+                        if k_ch1 == k_ch2 {
+                            d_k_ch_c += 1;
+                        }
+                    }
+                }
+                d_k_ch_c /= 2;
+
+                if d_ch_c < d_k_ch_c {
+                    map.remove(word).unwrap();
+                    continue 'next;
+                }
+
+                let mut check: [bool; 5] = [false, false, false, false, false];
+                for ch_index in 0..word.len() {
+                    if word.as_bytes()[ch_index] as char == *ch {
+                        check[ch_index] = true;
+                    }
+                }
+                if !check.contains(&true) {
+                    map.remove(word).unwrap();
+                    continue 'next;
+                }
+
+                for (w_ch, _) in wrong {
+                    if word.contains(*w_ch) {
+                        map.remove(word).unwrap();
+                        continue 'next;
+                    }
+                }
+
+                *c += 1;
+            }
+        }
+    }
+    // NOTHING
+    if correct.is_empty() && known.is_empty() {
+        'next: for word in WORDS.split(",") {
+            let c = map.entry(word).or_insert(0);
+            for (w_ch, _) in wrong {
                 if word.contains(*w_ch) {
                     map.remove(word).unwrap();
                     continue 'next;
                 }
             }
-
             *c += 1;
         }
     }
