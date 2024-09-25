@@ -1,6 +1,6 @@
 use std::{collections::HashMap, io};
 
-const WORDS: &str = include_str!("..\\wordle_words.txt");
+const WORDS: &str = include_str!("../wordle_words.txt");
 
 fn main() {
     let mut solutions: Vec<&str> = Vec::new();
